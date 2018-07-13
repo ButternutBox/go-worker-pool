@@ -8,13 +8,15 @@ type Dispatcher struct {
 	// A pool of workers channels that are registered with the dispatcher
 	WorkerPool chan chan Job
 	MaxWorkers int
+	JobQueue   chan Job
 }
 
-func NewDispatcher(maxWorkers int) *Dispatcher {
+func NewDispatcher(maxWorkers int, maxQueue int) *Dispatcher {
 	pool := make(chan chan Job, maxWorkers)
 	return &Dispatcher{
 		WorkerPool: pool,
 		MaxWorkers: maxWorkers,
+		JobQueue:   NewJobQueue(maxQueue),
 	}
 }
 
@@ -31,7 +33,7 @@ func (d *Dispatcher) Run() {
 func (d *Dispatcher) dispatch() {
 	for {
 		select {
-		case job := <-JobQueue:
+		case job := <-d.JobQueue:
 			// a job request has been received
 			go func(job Job) {
 				log.Println("received job")
